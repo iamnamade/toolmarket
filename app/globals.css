@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f9fc;
+  --foreground: #102033;
+  --navy: #072b4d;
+  --dark-navy: #041c32;
+  --orange: #f58220;
+  --muted: #6b7280;
+  --border: #e5eaf0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  overflow-x: clip;
+  font-family:
+    "Noto Sans Georgian",
+    "Noto Sans",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(245, 130, 32, 0.25),
+    0 0 0 1px rgba(245, 130, 32, 0.9);
+}
+
+.header-nav-link,
+.footer-nav-link {
+  position: relative;
+}
+
+.header-nav-link::after {
+  position: absolute;
+  right: 50%;
+  bottom: 2px;
+  left: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: #f58220;
+  box-shadow: 0 1px 5px rgba(245, 130, 32, 0.22);
+  content: "";
+  transition:
+    right 0.5s ease,
+    left 0.5s ease;
+}
+
+.header-nav-link:hover::after,
+.header-nav-link:focus-visible::after {
+  right: 12px;
+  left: 12px;
+}
+
+.footer-nav-link::after {
+  position: absolute;
+  right: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1px;
+  background: #f58220;
+  content: "";
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s ease;
+}
+
+.footer-nav-link:hover::after,
+.footer-nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.category-nav-button {
+  color: #ffffff !important;
+}
+
+.form-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #f7f9fc;
+  color: var(--foreground);
+  height: 48px;
+  padding: 0 14px;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.form-input::placeholder {
+  color: #8a95a8;
+}
+
+.form-input:focus {
+  border-color: var(--orange);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.18);
+}
+
+.price-range-input {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 36px;
+  appearance: none;
+  background: transparent;
+}
+
+.price-range-input::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.price-range-input::-webkit-slider-thumb {
+  pointer-events: auto;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  cursor: pointer;
+  appearance: none;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #f58220;
+  box-shadow:
+    0 3px 10px rgba(245, 130, 32, 0.38),
+    0 0 0 1px rgba(7, 43, 77, 0.1);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.price-range-input:focus-visible::-webkit-slider-thumb,
+.price-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 4px 14px rgba(245, 130, 32, 0.42),
+    0 0 0 4px rgba(245, 130, 32, 0.16);
+}
+
+.price-range-input::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.price-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #f58220;
+  box-shadow:
+    0 3px 10px rgba(245, 130, 32, 0.38),
+    0 0 0 1px rgba(7, 43, 77, 0.1);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.price-range-input:focus-visible::-moz-range-thumb,
+.price-range-input::-moz-range-thumb:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 4px 14px rgba(245, 130, 32, 0.42),
+    0 0 0 4px rgba(245, 130, 32, 0.16);
+}
+
+@keyframes product-image-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes product-content-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
