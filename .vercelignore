@@ -1,3 +1,7 @@
+.env
+.env.*
+!.env.example
+
 node_modules/
 .next/
 out/
@@ -6,15 +10,8 @@ build/
 .agents/
 artifacts/
 screenshots/
+docs/screenshots/
 
 *.log
 .next-dev.*
-next-env.d.ts
 tsconfig.tsbuildinfo
-
-.env
-.env.local
-.env.production
-.env*.local
-
-.vercel
