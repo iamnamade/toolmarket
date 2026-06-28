@@ -6,11 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum UserRole {
-  USER
-  ADMIN
-}
-
 model User {
   id             String          @id @default(cuid())
   name           String?
@@ -18,11 +13,11 @@ model User {
   emailVerified  DateTime?
   image          String?
   role           UserRole        @default(USER)
-  accounts       Account[]
-  sessions       Session[]
-  authenticators Authenticator[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  accounts       Account[]
+  authenticators Authenticator[]
+  sessions       Session[]
 }
 
 model Account {
@@ -30,16 +25,15 @@ model Account {
   type                     String
   provider                 String
   providerAccountId        String
-  refresh_token            String? @db.Text
-  access_token             String? @db.Text
+  refresh_token            String?
+  access_token             String?
   expires_at               Int?
   refresh_token_expires_in Int?
   token_type               String?
   scope                    String?
-  id_token                 String? @db.Text
+  id_token                 String?
   session_state            String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
 }
@@ -53,19 +47,16 @@ model Authenticator {
   credentialDeviceType String
   credentialBackedUp   Boolean
   transports           String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, credentialID])
 }
 
 model Session {
-  sessionToken String   @unique
+  sessionToken String   @id @unique
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([sessionToken])
 }
 
 model VerificationToken {
@@ -81,13 +72,18 @@ model Category {
   name      String
   slug      String     @unique
   parentId  String?
-  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children  Category[] @relation("CategoryHierarchy")
   sortOrder Int        @default(0)
   isActive  Boolean    @default(true)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Category[] @relation("CategoryHierarchy")
 
   @@index([parentId])
   @@index([sortOrder])
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }

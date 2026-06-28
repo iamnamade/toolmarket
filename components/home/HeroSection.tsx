@@ -2,76 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import type { CSSProperties } from "react";
-import { categories } from "@/data/categories";
 import { heroStats } from "@/data/site";
-import { formatProductCount } from "@/lib/format";
-
-type HeroSectionProps = {
-  categoryMenuOpen?: boolean;
-  categoryPanelId?: string;
-  onCategoryNavigate?: () => void;
-};
-
-const buildCategoryHref = (categoryName: string) =>
-  `/products?search=${encodeURIComponent(categoryName)}`;
-
-export function HeroSection({
-  categoryMenuOpen = true,
-  categoryPanelId,
-  onCategoryNavigate
-}: HeroSectionProps) {
-  const heroGridStyle = {
-    "--hero-category-column": categoryMenuOpen ? "300px" : "0px",
-    "--hero-category-gap": categoryMenuOpen ? "1.25rem" : "0px"
-  } as CSSProperties;
-
+export function HeroSection() {
   return (
     <section className="bg-white">
-      <div
-        className="mx-auto grid max-w-7xl gap-5 px-4 pb-6 pt-0 transition-[grid-template-columns,gap] duration-300 ease-out lg:px-6 xl:grid-cols-[var(--hero-category-column)_minmax(0,1fr)] xl:gap-[var(--hero-category-gap)]"
-        style={heroGridStyle}
-      >
-        <div className="relative hidden xl:block">
-          <aside
-            id={categoryPanelId}
-            data-home-category-panel
-            className={[
-              "absolute left-0 top-0 z-30 w-[300px] overflow-hidden rounded-lg border border-[#E5EAF0] bg-white shadow-[0_18px_42px_rgba(4,28,50,0.14)] transition-[opacity,transform] duration-300 ease-out will-change-transform",
-              categoryMenuOpen
-                ? "pointer-events-auto translate-x-0 opacity-100"
-                : "pointer-events-none -translate-x-4 opacity-0"
-            ].join(" ")}
-            aria-hidden={!categoryMenuOpen}
-          >
-          <div className="max-h-[520px] divide-y divide-[#E5EAF0] overflow-y-auto">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={buildCategoryHref(category.name)}
-                className="focus-ring group flex h-12 items-center gap-2 px-4 text-[15px] font-medium transition duration-200 hover:bg-[#F7F9FC]"
-                onClick={onCategoryNavigate}
-                tabIndex={categoryMenuOpen ? undefined : -1}
-              >
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-[#E5EAF0] bg-[#F7F8FA] text-[#8A95A8] transition group-hover:border-[#F58220]/35 group-hover:bg-[#FFF4EA] group-hover:text-[#F58220]">
-                  <category.icon className="size-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-medium leading-[18px] text-[#102033]">
-                    {category.name}
-                  </span>
-                  <span className="block truncate text-[11px] font-medium leading-[13px] text-[#6B7280]">
-                    {formatProductCount(category.productCount)}
-                  </span>
-                </span>
-                <ChevronRight className="size-4 shrink-0 text-[#8A95A8] transition group-hover:translate-x-0.5 group-hover:text-[#F58220]" />
-              </Link>
-            ))}
-          </div>
-        </aside>
-        </div>
-
+      <div className="mx-auto max-w-7xl px-4 pb-6 pt-0 lg:px-6">
         <div className="overflow-hidden rounded-lg bg-[#041C32]">
           <div className="grid min-h-[520px] lg:grid-cols-[0.95fr_1.05fr]">
             <div className="flex min-w-0 flex-col justify-center px-5 py-8 sm:px-8 lg:px-10">

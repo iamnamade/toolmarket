@@ -106,7 +106,7 @@ export function HeaderUserMenu({ onBeforeOpen, onOpenWishlist }: AccountMenuProp
         aria-hidden={!open}
         inert={!open}
         className={[
-          "absolute right-0 top-[calc(100%+0.5rem)] z-[70] w-[min(280px,calc(100vw-2rem))] origin-top-right rounded-lg border border-[#E5EAF0] bg-white p-2 shadow-[0_16px_38px_rgba(4,28,50,0.14)] transition-[opacity,transform] duration-200 ease-out",
+          "absolute left-0 top-full z-[70] mt-2 w-[min(280px,calc(100vw-2rem))] origin-top-left rounded-lg border border-[#E5EAF0] bg-white p-2 shadow-[0_16px_38px_rgba(4,28,50,0.14)] transition-[opacity,transform] duration-200 ease-out",
           open
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"

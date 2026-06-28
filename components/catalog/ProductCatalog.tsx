@@ -4,24 +4,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Cable,
   ChevronDown,
   ChevronRight,
-  Flame,
   Filter,
-  Hammer,
-  Leaf,
-  Lightbulb,
-  Link2,
-  Settings,
-  ShieldCheck,
+  Grid2x2,
   Search,
+  Settings,
   SlidersHorizontal,
-  Wrench,
   X
 } from "lucide-react";
 import { ProductCard } from "@/components/home/ProductCard";
 import { brands } from "@/data/brands";
+import {
+  catalogCategories,
+  categoryHref,
+  countProductsForCategory,
+  countProductsForSubcategory,
+  getCategoryBySlug,
+  getSubcategoryBySlug,
+  productMatchesCategory,
+  productMatchesSubcategory,
+  subcategoryHref
+} from "@/data/category-navigation";
 import { parsePriceToCents } from "@/lib/price";
 import { searchProducts } from "@/lib/search-products";
 import type { LucideIcon } from "lucide-react";
@@ -34,10 +38,13 @@ type PaginationItem = number | "ellipsis-start" | "ellipsis-end";
 type ProductCatalogProps = {
   products: Product[];
   initialSearchQuery?: string;
+  initialCategorySlug?: string;
+  initialSubcategorySlug?: string;
 };
 
 type CountOption = {
   label: string;
+  value: string;
   count: number;
 };
 
@@ -52,18 +59,6 @@ type SidebarSections = {
   discount: boolean;
 };
 
-const categoryOrder = [
-  "ხელსაწყოები",
-  "ელექტრობა და განათება",
-  "სამშენებლო მასალები",
-  "სამაგრები",
-  "იზოლენტები",
-  "უსაფრთხოება",
-  "ბაღი და ეზო",
-  "შედუღება",
-  "აქსესუარები"
-];
-
 const brandOrder = [
   "TOPFINE",
   "INGCO",
@@ -77,18 +72,6 @@ const brandOrder = [
 
 const brandMetaByName = new Map(brands.map((brand) => [brand.name, brand] as const));
 
-const categoryIconByName: Record<string, LucideIcon> = {
-  "ხელსაწყოები": Wrench,
-  "ელექტრობა და განათება": Lightbulb,
-  "სამშენებლო მასალები": Hammer,
-  "სამაგრები": Link2,
-  "იზოლენტები": Cable,
-  "უსაფრთხოება": ShieldCheck,
-  "ბაღი და ეზო": Leaf,
-  "შედუღება": Flame,
-  "აქსესუარები": Settings
-};
-
 const sortOptions: Array<{ value: SortOption; label: string }> = [
   { value: "popular", label: "პოპულარულობით" },
   { value: "price-asc", label: "ფასი ზრდადობით" },
@@ -98,15 +81,29 @@ const sortOptions: Array<{ value: SortOption; label: string }> = [
 ];
 
 const PRODUCTS_PER_PAGE = 12;
+const DEFAULT_CATALOG_DESCRIPTION =
+  "მოძებნეთ ხელსაწყოები, სამშენებლო მასალები და ტექნიკური პროდუქტები სასურველი ფასითა და ბრენდით.";
 
 export function ProductCatalog({
   products,
-  initialSearchQuery = ""
+  initialSearchQuery = "",
+  initialCategorySlug,
+  initialSubcategorySlug
 }: ProductCatalogProps) {
   const catalogTopRef = useRef<HTMLDivElement>(null);
+  const selectedCatalogCategory = getCategoryBySlug(initialCategorySlug);
+  const selectedCatalogSubcategory = getSubcategoryBySlug(
+    selectedCatalogCategory,
+    initialSubcategorySlug
+  );
   const priceLimit = useMemo(() => getPriceLimit(products), [products]);
   const categoryOptions = useMemo(
-    () => createCountOptions(products, "category", categoryOrder),
+    () =>
+      catalogCategories.map((category) => ({
+        label: category.nameKa,
+        value: category.slug,
+        count: countProductsForCategory(products, category)
+      })),
     [products]
   );
   const brandOptions = useMemo(
@@ -116,6 +113,22 @@ export function ProductCatalog({
   const availabilityOptions = useMemo(
     () => createAvailabilityOptions(products),
     [products]
+  );
+  const categoryProducts = useMemo(
+    () =>
+      selectedCatalogCategory
+        ? products.filter((product) =>
+            productMatchesCategory(product, selectedCatalogCategory)
+          )
+        : products,
+    [products, selectedCatalogCategory]
+  );
+  const selectedSubcategoryProductCount = useMemo(
+    () =>
+      selectedCatalogSubcategory
+        ? countProductsForSubcategory(products, selectedCatalogSubcategory)
+        : null,
+    [products, selectedCatalogSubcategory]
   );
 
   const [query, setQuery] = useState(initialSearchQuery);
@@ -160,9 +173,19 @@ export function ProductCatalog({
   }, [filtersOpen]);
 
   const filteredProducts = useMemo(() => {
+    const scopedProducts = selectedCatalogCategory
+      ? products.filter((product) => {
+          const matchesCategory = productMatchesCategory(product, selectedCatalogCategory);
+          const matchesSubcategory = selectedCatalogSubcategory
+            ? productMatchesSubcategory(product, selectedCatalogSubcategory)
+            : true;
+
+          return matchesCategory && matchesSubcategory;
+        })
+      : products;
     const searchedProducts = query.trim()
-      ? searchProducts(products, query)
-      : [...products];
+      ? searchProducts(scopedProducts, query)
+      : [...scopedProducts];
     const minPriceCents = minPrice * 100;
     const maxPriceCents = maxPrice * 100;
 
@@ -171,7 +194,13 @@ export function ProductCatalog({
         const productPrice = parsePriceToCents(product.price);
         const matchesCategory =
           selectedCategories.length === 0 ||
-          selectedCategories.includes(product.category);
+          selectedCategories.some((categorySlug) => {
+            const category = getCategoryBySlug(categorySlug);
+
+            return category
+              ? productMatchesCategory(product, category)
+              : categorySlug === product.category;
+          });
         const matchesBrand =
           selectedBrands.length === 0 || selectedBrands.includes(product.brand);
         const matchesAvailability =
@@ -197,6 +226,8 @@ export function ProductCatalog({
     selectedAvailability,
     selectedBrands,
     selectedCategories,
+    selectedCatalogCategory,
+    selectedCatalogSubcategory,
     sort
   ]);
 
@@ -219,13 +250,19 @@ export function ProductCatalog({
     minPrice > 0 ||
     maxPrice < priceLimit ||
     discountOnly;
+  const landingTitle = selectedCatalogCategory?.nameKa ?? "პროდუქტების კატალოგი";
+  const landingDescription =
+    selectedCatalogCategory?.description ?? DEFAULT_CATALOG_DESCRIPTION;
+  const hasEmptySelectedSubcategory = selectedSubcategoryProductCount === 0;
 
   const breadcrumbCategory =
-    selectedCategories.length === 1
+    selectedCatalogSubcategory?.nameKa ??
+    selectedCatalogCategory?.nameKa ??
+    (selectedCategories.length === 1
       ? selectedCategories[0]
       : selectedCategories.length > 1
         ? `${selectedCategories.length} კატეგორია`
-        : null;
+        : null);
 
   const clearFilters = () => {
     setQuery("");
@@ -296,8 +333,6 @@ export function ProductCatalog({
   return (
     <section className="bg-[#F7F9FC] py-6 lg:py-8">
       <div className="mx-auto max-w-7xl px-4 lg:px-6">
-        <Breadcrumb currentCategory={breadcrumbCategory} />
-
         <div className="mt-5 grid items-start gap-6 lg:grid-cols-[292px_minmax(0,1fr)]">
           <aside className="hidden lg:block">
             <div className="sticky top-[156px] overflow-hidden rounded-xl border border-[#E5EAF0] bg-white shadow-[0_14px_34px_rgba(4,28,50,0.07)]">
@@ -337,16 +372,97 @@ export function ProductCatalog({
           </aside>
 
           <div ref={catalogTopRef} className="min-w-0 scroll-mt-40">
-            <div className="rounded-xl border border-[#E5EAF0] bg-white p-5 shadow-[0_10px_26px_rgba(4,28,50,0.05)] sm:p-6">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <Breadcrumb
+              currentCategory={selectedCatalogCategory?.nameKa ?? breadcrumbCategory}
+              currentCategoryHref={selectedCatalogCategory ? categoryHref(selectedCatalogCategory.slug) : null}
+              currentSubcategory={selectedCatalogSubcategory?.nameKa ?? null}
+            />
+
+            <div className="mt-4 rounded-[28px] border border-[#E5EAF0] bg-white p-6 shadow-[0_10px_26px_rgba(4,28,50,0.04)] lg:p-7">
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                <div className="min-w-0">
+                  <span className="inline-flex rounded-full bg-[#FFF3E8] px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-[#C65F0B]">
+                    {selectedCatalogCategory ? "კატეგორია" : "კატალოგი"}
+                  </span>
+                  <h1 className="mt-4 text-[32px] font-black leading-tight text-[#041C32]">
+                    {landingTitle}
+                  </h1>
+                  <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[#6B7280]">
+                    {landingDescription}
+                  </p>
+                </div>
+
+                <div className="grid gap-3 rounded-[24px] border border-[#E5EAF0] bg-[#F7F9FC] p-5 sm:min-w-[300px]">
+                  <p className="text-sm font-black text-[#102033]">
+                    ნაპოვნია {filteredProducts.length} პროდუქტი
+                  </p>
+                  <label className="grid gap-2 text-sm font-bold text-[#6B7280]">
+                    <span>სორტირება</span>
+                    <select
+                      value={sort}
+                      onChange={(event) => {
+                        setCurrentPage(1);
+                        setSort(event.target.value as SortOption);
+                      }}
+                      className="focus-ring h-12 w-full rounded-2xl border border-[#E5EAF0] bg-white px-4 text-sm font-black text-[#102033]"
+                    >
+                      {sortOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              {selectedCatalogCategory ? (
+                <div className="mt-4 rounded-[28px] border border-[#E5EAF0] bg-white p-4 shadow-[0_10px_26px_rgba(4,28,50,0.04)] sm:p-5">
+                  <div className="hidden">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-[#8A95A8]">
+                        ქვეკატეგორიები
+                      </p>
+                      <p className="mt-1 text-sm text-[#6B7280]">
+                        აირჩიეთ სასურველი მიმართულება და ნახეთ მხოლოდ შესაბამისი პროდუქტები.
+                      </p>
+                    </div>
+                    <span className="hidden rounded-full bg-[#F1F4F7] px-3 py-1 text-xs font-black text-[#072B4D] md:inline-flex">
+                      {categoryProducts.length} პროდუქტი
+                    </span>
+                  </div>
+
+                  <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0 lg:overflow-visible">
+                    <div className="flex min-w-max gap-3 lg:min-w-0 lg:flex-wrap">
+                      <SubcategoryQuickLink
+                        href={categoryHref(selectedCatalogCategory.slug)}
+                        icon={Grid2x2}
+                        label="ყველა"
+                        active={!selectedCatalogSubcategory}
+                      />
+                      {selectedCatalogCategory.children.map((child) => (
+                        <SubcategoryQuickLink
+                          key={child.slug}
+                          href={subcategoryHref(selectedCatalogCategory.slug, child.slug)}
+                          icon={child.icon}
+                          label={child.nameKa}
+                          active={selectedCatalogSubcategory?.slug === child.slug}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="hidden">
                 <div>
                   <span className="text-sm font-black text-[#F58220]">კატალოგი</span>
                   <h1 className="mt-1 text-2xl font-black text-[#041C32] sm:text-3xl">
-                    პროდუქტების კატალოგი
+                    {selectedCatalogCategory?.nameKa ?? "პროდუქტების კატალოგი"}
                   </h1>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6B7280]">
-                    მოძებნეთ ხელსაწყოები, სამშენებლო მასალები და ტექნიკური პროდუქტები
-                    სასურველი ფასითა და ბრენდით.
+                    {selectedCatalogSubcategory?.nameKa ??
+                      "მოძებნეთ ხელსაწყოები, სამშენებლო მასალები და ტექნიკური პროდუქტები სასურველი ფასითა და ბრენდით."}
                   </p>
                 </div>
 
@@ -374,6 +490,38 @@ export function ProductCatalog({
                 </div>
               </div>
             </div>
+
+            {selectedCatalogCategory ? (
+              <div className="hidden">
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={categoryHref(selectedCatalogCategory.slug)}
+                    className={[
+                      "focus-ring rounded-lg border px-3 py-2 text-sm font-black transition duration-150",
+                      !selectedCatalogSubcategory
+                        ? "border-[#F58220] bg-[#FFF3E8] text-[#C65F0B]"
+                        : "border-[#E5EAF0] bg-[#F7F9FC] text-[#102033] hover:border-[#F7CFA7]"
+                    ].join(" ")}
+                  >
+                    ყველა
+                  </Link>
+                  {selectedCatalogCategory.children.map((child) => (
+                    <Link
+                      key={child.slug}
+                      href={subcategoryHref(selectedCatalogCategory.slug, child.slug)}
+                      className={[
+                        "focus-ring rounded-lg border px-3 py-2 text-sm font-black transition duration-150",
+                        selectedCatalogSubcategory?.slug === child.slug
+                          ? "border-[#F58220] bg-[#FFF3E8] text-[#C65F0B]"
+                          : "border-[#E5EAF0] bg-[#F7F9FC] text-[#102033] hover:border-[#F7CFA7]"
+                      ].join(" ")}
+                    >
+                      {child.nameKa}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <button
               type="button"
@@ -418,10 +566,28 @@ export function ProductCatalog({
                 <div className="rounded-xl border border-dashed border-[#D7DEE8] bg-white px-5 py-16 text-center">
                   <Search className="mx-auto size-9 text-[#F58220]" />
                   <h2 className="mt-4 text-2xl font-black text-[#041C32]">
-                    პროდუქტი ვერ მოიძებნა
+                    {hasEmptySelectedSubcategory
+                      ? "ამ ქვეკატეგორიაში პროდუქტები მალე დაემატება."
+                      : selectedCatalogCategory
+                        ? "ამ კატეგორიაში პროდუქტები ვერ მოიძებნა"
+                        : "პროდუქტი ვერ მოიძებნა"}
                   </h2>
                   <p className="mt-2 text-sm font-bold text-[#6B7280]">
-                    შეცვალეთ საძიებო სიტყვა ან ფილტრები.
+                    {hasEmptySelectedSubcategory
+                      ? "აირჩიეთ სხვა ქვეკატეგორია ან მოგვიანებით შეამოწმეთ."
+                      : selectedCatalogCategory
+                        ? "შეცვალეთ ფილტრები ან აირჩიეთ სხვა ქვეკატეგორია."
+                        : "შეცვალეთ საძიებო სიტყვა ან ფილტრები."}
+                  </p>
+                  <h2 className="hidden">
+                    {selectedCatalogCategory
+                      ? "ამ კატეგორიაში პროდუქტები მალე დაემატება."
+                      : "პროდუქტი ვერ მოიძებნა"}
+                  </h2>
+                  <p className="hidden">
+                    {selectedCatalogCategory
+                      ? "აირჩიეთ სხვა ქვეკატეგორია ან მოგვიანებით შეამოწმეთ."
+                      : "შეცვალეთ საძიებო სიტყვა ან ფილტრები."}
                   </p>
                   {activeFilters ? (
                     <button
@@ -504,7 +670,15 @@ export function ProductCatalog({
   );
 }
 
-function Breadcrumb({ currentCategory }: { currentCategory: string | null }) {
+function Breadcrumb({
+  currentCategory,
+  currentCategoryHref,
+  currentSubcategory
+}: {
+  currentCategory: string | null;
+  currentCategoryHref: string | null;
+  currentSubcategory: string | null;
+}) {
   return (
     <nav aria-label="ნავიგაციის გზა" className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
       <Link href="/" className="focus-ring rounded text-[#6B7280] transition hover:text-[#072B4D]">
@@ -520,9 +694,24 @@ function Breadcrumb({ currentCategory }: { currentCategory: string | null }) {
             პროდუქტები
           </Link>
           <ChevronRight className="size-3.5 text-[#A1AAB8]" aria-hidden="true" />
-          <span className="text-[#F58220]" aria-current="page">
-            {currentCategory}
-          </span>
+          {currentSubcategory && currentCategoryHref ? (
+            <>
+              <Link
+                href={currentCategoryHref}
+                className="focus-ring rounded text-[#6B7280] transition hover:text-[#072B4D]"
+              >
+                {currentCategory}
+              </Link>
+              <ChevronRight className="size-3.5 text-[#A1AAB8]" aria-hidden="true" />
+              <span className="text-[#F58220]" aria-current="page">
+                {currentSubcategory}
+              </span>
+            </>
+          ) : (
+            <span className="text-[#F58220]" aria-current="page">
+              {currentCategory}
+            </span>
+          )}
         </>
       ) : (
         <span className="text-[#F58220]" aria-current="page">
@@ -530,6 +719,54 @@ function Breadcrumb({ currentCategory }: { currentCategory: string | null }) {
         </span>
       )}
     </nav>
+  );
+}
+
+function SubcategoryQuickLink({
+  href,
+  icon: Icon,
+  label,
+  count,
+  active
+}: {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  count?: number;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={[
+        "focus-ring group flex min-h-[124px] min-w-[132px] snap-start flex-col items-center justify-center gap-3 rounded-[22px] border px-4 py-5 text-center transition duration-150 sm:min-w-[148px] lg:min-w-0 lg:flex-1 lg:basis-[152px]",
+        active
+          ? "border-[#F58220] bg-[#FFF8F1] text-[#072B4D]"
+          : "border-[#E5EAF0] bg-white text-[#102033] hover:-translate-y-0.5 hover:border-[#F7CFA7] hover:bg-[#FFFDFC]"
+      ].join(" ")}
+    >
+      <div className="flex flex-col items-center gap-3 text-center">
+        <span
+          className={[
+            "grid size-14 shrink-0 place-items-center rounded-2xl border transition",
+            active
+              ? "border-[#F7D7B5] bg-white text-[#F58220]"
+              : "border-[#E8EDF3] bg-[#F7F9FC] text-[#0B3A68] group-hover:border-[#F7D7B5] group-hover:bg-[#FFF7F0] group-hover:text-[#F58220]"
+          ].join(" ")}
+        >
+          <Icon className="size-6" strokeWidth={1.9} />
+        </span>
+        <span className="min-w-0">
+          <span className="line-clamp-2 block text-sm font-black leading-5">
+            {label}
+          </span>
+          <span className="hidden">
+            {count} პროდუქტი
+          </span>
+        </span>
+      </div>
+    </Link>
   );
 }
 
@@ -774,16 +1011,16 @@ function FilterContent({
       >
         <div className="grid gap-2">
           {visibleCategories.map((option) => {
-            const CategoryIcon = categoryIconByName[option.label] ?? Settings;
+            const CategoryIcon = getCategoryBySlug(option.value)?.icon ?? Settings;
 
             return (
               <SidebarRow
-                key={option.label}
-                checked={selectedCategories.includes(option.label)}
+                key={option.value}
+                checked={selectedCategories.includes(option.value)}
                 count={option.count}
                 icon={CategoryIcon}
                 label={option.label}
-                onChange={() => toggleCategory(option.label)}
+                onChange={() => toggleCategory(option.value)}
               />
             );
           })}
@@ -1027,7 +1264,7 @@ function SidebarRow({
           aria-hidden="true"
         >
           {Icon ? (
-            <Icon className="size-[18px]" strokeWidth={2} />
+            <Icon className="size-5" strokeWidth={1.9} />
           ) : (
             <span
               className="size-2.5 rounded-full"
@@ -1168,7 +1405,7 @@ function createCountOptions(
   });
 
   return Array.from(counts.entries())
-    .map(([label, count]) => ({ label, count }))
+    .map(([label, count]) => ({ label, value: label, count }))
     .sort((first, second) => {
       const firstIndex = order.indexOf(first.label);
       const secondIndex = order.indexOf(second.label);

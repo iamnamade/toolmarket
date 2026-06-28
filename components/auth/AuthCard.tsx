@@ -3,6 +3,7 @@
 import { AlertCircle, Check, Eye, EyeOff, LoaderCircle, LockKeyhole } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useMemo, useState } from "react";
+import { RecaptchaCheckbox } from "@/components/auth/RecaptchaCheckbox";
 import { Logo } from "@/components/ui/Logo";
 
 type AuthMode = "login" | "register";
@@ -15,15 +16,31 @@ type NoticeState = {
 type LoginErrors = {
   email?: string;
   password?: string;
-  robot?: string;
 };
 
 type RegisterErrors = {
+  captcha?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
   password?: string;
   repeatPassword?: string;
+};
+
+type RegisterResponse = {
+  error?: string;
+  field?: keyof RegisterErrors;
+  user?: {
+    email: string | null;
+  };
+};
+
+const emptyRegisterValues = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  repeatPassword: ""
 };
 
 const passwordRules = [
@@ -49,8 +66,6 @@ const passwordRules = [
   }
 ];
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -62,28 +77,25 @@ export function AuthCard({
   initialMode?: AuthMode;
   callbackUrl?: string;
 }) {
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY?.trim() ?? "";
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [loginValues, setLoginValues] = useState({
     email: "",
     password: ""
   });
-  const [registerValues, setRegisterValues] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    repeatPassword: ""
-  });
+  const [registerValues, setRegisterValues] = useState(emptyRegisterValues);
   const [loginErrors, setLoginErrors] = useState<LoginErrors>({});
   const [registerErrors, setRegisterErrors] = useState<RegisterErrors>({});
   const [notice, setNotice] = useState<NoticeState>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [robotVerified, setRobotVerified] = useState(false);
   const [loginPasswordVisible, setLoginPasswordVisible] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [repeatPasswordVisible, setRepeatPasswordVisible] = useState(false);
+  const [registerCaptchaReady, setRegisterCaptchaReady] = useState(false);
+  const [registerCaptchaToken, setRegisterCaptchaToken] = useState<string | null>(null);
+  const [registerCaptchaResetNonce, setRegisterCaptchaResetNonce] = useState(0);
 
   const strength = useMemo(
     () => getPasswordStrength(registerValues.password),
@@ -95,12 +107,23 @@ export function AuthCard({
   const hasMismatch =
     registerValues.repeatPassword.length > 0 &&
     registerValues.password !== registerValues.repeatPassword;
+  const registerSubmitDisabled =
+    registerLoading || !recaptchaSiteKey || !registerCaptchaReady || !registerCaptchaToken;
+
+  const resetRegisterCaptcha = () => {
+    setRegisterCaptchaToken(null);
+    setRegisterCaptchaResetNonce((current) => current + 1);
+  };
 
   const switchMode = (nextMode: AuthMode) => {
     setMode(nextMode);
     setLoginErrors({});
     setRegisterErrors({});
     setNotice(null);
+
+    if (nextMode !== "register") {
+      resetRegisterCaptcha();
+    }
   };
 
   const handleLoginSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -120,10 +143,6 @@ export function AuthCard({
 
     if (!loginValues.password) {
       nextErrors.password = "პაროლი აუცილებელია";
-    }
-
-    if (!robotVerified) {
-      nextErrors.robot = "გთხოვთ დაადასტუროთ, რომ რობოტი არ ხართ";
     }
 
     setLoginErrors(nextErrors);
@@ -197,6 +216,12 @@ export function AuthCard({
       nextErrors.repeatPassword = "პაროლები არ ემთხვევა";
     }
 
+    if (!recaptchaSiteKey) {
+      nextErrors.captcha = "reCAPTCHA-ის კონფიგურაცია ვერ მოიძებნა.";
+    } else if (!registerCaptchaToken) {
+      nextErrors.captcha = "გთხოვთ დაადასტუროთ, რომ რობოტი არ ხართ.";
+    }
+
     setRegisterErrors(nextErrors);
     setNotice(null);
 
@@ -205,12 +230,65 @@ export function AuthCard({
     }
 
     setRegisterLoading(true);
-    await delay(450);
-    setRegisterLoading(false);
-    setNotice({
-      tone: "info",
-      text: "რეგისტრაცია ჯერ არ არის დაკავშირებული"
-    });
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          firstName: registerValues.firstName.trim(),
+          lastName: registerValues.lastName.trim(),
+          email: registerValues.email.trim(),
+          password: registerValues.password,
+          captchaToken: registerCaptchaToken
+        })
+      });
+      const payload = (await response.json().catch(() => null)) as RegisterResponse | null;
+
+      resetRegisterCaptcha();
+
+      if (!response.ok) {
+        const field = payload?.field;
+
+        if (field) {
+          setRegisterErrors((current) => ({
+            ...current,
+            [field]: payload.error ?? "რეგისტრაცია ვერ შესრულდა."
+          }));
+        } else {
+          setNotice({
+            tone: "error",
+            text: payload?.error ?? "რეგისტრაცია ვერ შესრულდა. გთხოვთ სცადოთ თავიდან."
+          });
+        }
+
+        return;
+      }
+
+      const registeredEmail = payload?.user?.email ?? registerValues.email.trim().toLowerCase();
+
+      setRegisterValues(emptyRegisterValues);
+      setRegisterErrors({});
+      setLoginValues({
+        email: registeredEmail,
+        password: ""
+      });
+      setMode("login");
+      setNotice({
+        tone: "info",
+        text: "ანგარიში წარმატებით შეიქმნა. ახლა შეგიძლიათ შეხვიდეთ."
+      });
+    } catch {
+      resetRegisterCaptcha();
+      setNotice({
+        tone: "error",
+        text: "რეგისტრაცია ვერ შესრულდა. გთხოვთ სცადოთ თავიდან."
+      });
+    } finally {
+      setRegisterLoading(false);
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -280,20 +358,7 @@ export function AuthCard({
               invalid={Boolean(loginErrors.password)}
             />
           </Field>
-          <div className="grid gap-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
-            <label className="flex min-w-0 items-center gap-3 rounded-md border border-[#E5EAF0] bg-[#F7F8FA] px-3 py-3 font-bold text-[#102033] transition hover:border-[#F58220]">
-              <input
-                type="checkbox"
-                checked={robotVerified}
-                onChange={(event) => {
-                  setRobotVerified(event.target.checked);
-                  setLoginErrors((current) => ({ ...current, robot: undefined }));
-                  setNotice(null);
-                }}
-                className="size-4 accent-[#F58220]"
-              />
-              <span>I am not a robot</span>
-            </label>
+          <div className="flex justify-end">
             <button
               type="button"
               className="focus-ring w-fit rounded-md font-black text-[#072B4D] hover:text-[#F58220]"
@@ -301,7 +366,6 @@ export function AuthCard({
               დაგავიწყდათ პაროლი?
             </button>
           </div>
-          {loginErrors.robot ? <InlineError text={loginErrors.robot} /> : null}
           <SubmitButton label="შესვლა" loading={loginLoading} />
           <GoogleButton loading={googleLoading} onClick={handleGoogleLogin} />
           {notice ? <NoticeMessage text={notice.text} tone={notice.tone} /> : null}
@@ -431,7 +495,29 @@ export function AuthCard({
           {hasMismatch ? (
             <p className="text-sm font-bold text-[#D92D20]">პაროლები არ ემთხვევა</p>
           ) : null}
-          <SubmitButton label="რეგისტრაცია" loading={registerLoading} />
+          <div>
+            <div className="rounded-md border border-[#E5EAF0] bg-[#F7F8FA] px-3 py-3">
+              <RecaptchaCheckbox
+                siteKey={recaptchaSiteKey}
+                resetNonce={registerCaptchaResetNonce}
+                onReadyChange={setRegisterCaptchaReady}
+                onTokenChange={(token) => {
+                  setRegisterCaptchaToken(token);
+                  setRegisterErrors((current) => ({
+                    ...current,
+                    captcha: undefined
+                  }));
+                  setNotice(null);
+                }}
+              />
+            </div>
+            {registerErrors.captcha ? <InlineError text={registerErrors.captcha} /> : null}
+          </div>
+          <SubmitButton
+            label="რეგისტრაცია"
+            loading={registerLoading}
+            disabled={registerSubmitDisabled}
+          />
           <GoogleButton loading={googleLoading} onClick={handleGoogleLogin} />
           {notice ? <NoticeMessage text={notice.text} tone={notice.tone} /> : null}
         </form>
@@ -581,11 +667,19 @@ function PasswordStrength({
   );
 }
 
-function SubmitButton({ label, loading }: { label: string; loading: boolean }) {
+function SubmitButton({
+  label,
+  loading,
+  disabled = false
+}: {
+  label: string;
+  loading: boolean;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="submit"
-      disabled={loading}
+      disabled={loading || disabled}
       aria-busy={loading}
       className="focus-ring inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md bg-[#F58220] px-5 text-sm font-black text-white transition hover:bg-[#de741d] disabled:cursor-not-allowed disabled:opacity-70"
     >

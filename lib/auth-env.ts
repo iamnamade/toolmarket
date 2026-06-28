@@ -6,16 +6,49 @@ export type AuthStatus = {
   usesLegacyGoogleEnv: boolean;
 };
 
+export type ResendConfig = {
+  apiKey: string;
+  fromEmail: string;
+};
+
+function readTrimmedEnv(value: string | undefined) {
+  const normalized = value?.trim();
+
+  return normalized ? normalized : null;
+}
+
 export function getGoogleAuthCredentials() {
-  const authGoogleId = process.env.AUTH_GOOGLE_ID;
-  const authGoogleSecret = process.env.AUTH_GOOGLE_SECRET;
-  const legacyGoogleId = process.env.GOOGLE_CLIENT_ID;
-  const legacyGoogleSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const authGoogleId = readTrimmedEnv(process.env.AUTH_GOOGLE_ID);
+  const authGoogleSecret = readTrimmedEnv(process.env.AUTH_GOOGLE_SECRET);
+  const legacyGoogleId = readTrimmedEnv(process.env.GOOGLE_CLIENT_ID);
+  const legacyGoogleSecret = readTrimmedEnv(process.env.GOOGLE_CLIENT_SECRET);
 
   return {
     clientId: authGoogleId ?? legacyGoogleId,
     clientSecret: authGoogleSecret ?? legacyGoogleSecret,
     usesLegacyGoogleEnv: Boolean(!authGoogleId && legacyGoogleId)
+  };
+}
+
+export function getRecaptchaSiteKey() {
+  return readTrimmedEnv(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY);
+}
+
+export function getRecaptchaSecretKey() {
+  return readTrimmedEnv(process.env.RECAPTCHA_SECRET_KEY);
+}
+
+export function getResendConfig(): ResendConfig | null {
+  const apiKey = readTrimmedEnv(process.env.RESEND_API_KEY);
+  const fromEmail = readTrimmedEnv(process.env.RESEND_FROM_EMAIL);
+
+  if (!apiKey || !fromEmail) {
+    return null;
+  }
+
+  return {
+    apiKey,
+    fromEmail
   };
 }
 

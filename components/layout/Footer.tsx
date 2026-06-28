@@ -1,15 +1,13 @@
 import Link from "next/link";
 import { Globe, Mail, MapPin, MessageCircle, Phone, Share2 } from "lucide-react";
 import { footerLinks } from "@/data/site";
-import { Logo } from "@/components/ui/Logo";
 
 export function Footer() {
   return (
     <footer id="footer" className="bg-[#041C32] text-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-2 lg:grid-cols-[1.2fr_1fr_0.8fr_0.8fr_0.7fr] lg:px-6">
         <div>
-          <Logo inverted />
-          <p className="mt-5 max-w-sm text-sm leading-7 text-white/70">
+          <p className="max-w-sm text-sm leading-7 text-white/70">
             პროფესიონალური ხელსაწყოები, სამშენებლო მასალები და ტექნიკური პროდუქტები
             სანდო ecommerce სივრცეში.
           </p>

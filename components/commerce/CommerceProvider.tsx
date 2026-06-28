@@ -143,6 +143,15 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
     setWishlist((current) => current.filter((item) => item.id !== productId));
   };
 
+  const handleToastAction = () => {
+    if (toast?.action !== "openCart") {
+      return;
+    }
+
+    setToast(null);
+    setActiveDrawer("cart");
+  };
+
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   const subtotalCents = cart.reduce(
     (total, item) => total + parsePriceToCents(item.product.price) * item.quantity,
@@ -270,7 +279,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
 
       <div
         className={[
-          "fixed bottom-4 right-4 z-[100] flex max-w-[calc(100%_-_2rem)] items-start gap-3 rounded-md border border-[#DCE3EA] bg-white px-4 py-3 text-sm font-black text-[#102033] shadow-[0_14px_34px_rgba(4,28,50,0.18)] transition duration-200 sm:max-w-sm",
+          "fixed bottom-4 right-4 z-[100] max-w-[calc(100%_-_2rem)] rounded-md border border-[#DCE3EA] bg-white text-sm font-black text-[#102033] shadow-[0_14px_34px_rgba(4,28,50,0.18)] transition duration-200 sm:max-w-sm",
           toast
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none translate-y-3 opacity-0"
@@ -279,33 +288,50 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
         aria-live="polite"
         aria-atomic="true"
       >
-        <span
-          className={[
-            "mt-0.5 grid size-9 shrink-0 place-items-center rounded-md text-white",
-            toast?.tone === "cart" ? "bg-[#F58220]" : "bg-[#157347]"
-          ].join(" ")}
-        >
-          {toast?.tone === "cart" ? (
-            <ShoppingCart className="size-4" />
-          ) : (
-            <Heart className="size-4 fill-current" />
-          )}
-        </span>
-        <span className="min-w-0">
-          <span className="block leading-5">{toast?.message}</span>
-          {toast?.action === "openCart" ? (
-            <button
-              type="button"
-              className="focus-ring mt-2 rounded text-xs font-black text-[#0B3A68] underline-offset-4 transition hover:text-[#F58220] hover:underline"
-              onClick={() => {
-                setToast(null);
-                setActiveDrawer("cart");
-              }}
+        {toast?.action === "openCart" ? (
+          <button
+            type="button"
+            onClick={handleToastAction}
+            className="focus-ring flex w-full cursor-pointer items-start gap-3 rounded-md px-4 py-3 text-left transition duration-150 hover:bg-[#F8FAFC] hover:shadow-[0_18px_36px_rgba(4,28,50,0.2)]"
+          >
+            <span
+              className={[
+                "mt-0.5 grid size-9 shrink-0 place-items-center rounded-md text-white",
+                toast.tone === "cart" ? "bg-[#F58220]" : "bg-[#157347]"
+              ].join(" ")}
             >
-              კალათის ნახვა
-            </button>
-          ) : null}
-        </span>
+              {toast.tone === "cart" ? (
+                <ShoppingCart className="size-4" />
+              ) : (
+                <Heart className="size-4 fill-current" />
+              )}
+            </span>
+            <span className="min-w-0">
+              <span className="block leading-5">{toast.message}</span>
+              <span className="mt-2 block text-xs font-black text-[#0B3A68] underline-offset-4 transition hover:text-[#F58220] hover:underline">
+                კალათის ნახვა
+              </span>
+            </span>
+          </button>
+        ) : (
+          <div className="flex items-start gap-3 px-4 py-3">
+            <span
+              className={[
+                "mt-0.5 grid size-9 shrink-0 place-items-center rounded-md text-white",
+                toast?.tone === "cart" ? "bg-[#F58220]" : "bg-[#157347]"
+              ].join(" ")}
+            >
+              {toast?.tone === "cart" ? (
+                <ShoppingCart className="size-4" />
+              ) : (
+                <Heart className="size-4 fill-current" />
+              )}
+            </span>
+            <span className="min-w-0">
+              <span className="block leading-5">{toast?.message}</span>
+            </span>
+          </div>
+        )}
       </div>
     </CommerceContext.Provider>
   );
