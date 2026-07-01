@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -16,7 +16,6 @@ import {
 import { ProductCard } from "@/components/home/ProductCard";
 import { brands } from "@/data/brands";
 import {
-  catalogCategories,
   categoryHref,
   countProductsForCategory,
   countProductsForSubcategory,
@@ -28,6 +27,8 @@ import {
 } from "@/data/category-navigation";
 import { parsePriceToCents } from "@/lib/price";
 import { searchProducts } from "@/lib/search-products";
+import { useCatalogCategories } from "@/lib/use-catalog-categories";
+import { SlideDrawer } from "@/components/ui/SlideDrawer";
 import type { LucideIcon } from "lucide-react";
 import type { Product } from "@/types/catalog";
 
@@ -90,8 +91,9 @@ export function ProductCatalog({
   initialCategorySlug,
   initialSubcategorySlug
 }: ProductCatalogProps) {
+  const categories = useCatalogCategories();
   const catalogTopRef = useRef<HTMLDivElement>(null);
-  const selectedCatalogCategory = getCategoryBySlug(initialCategorySlug);
+  const selectedCatalogCategory = getCategoryBySlug(initialCategorySlug, categories);
   const selectedCatalogSubcategory = getSubcategoryBySlug(
     selectedCatalogCategory,
     initialSubcategorySlug
@@ -99,12 +101,12 @@ export function ProductCatalog({
   const priceLimit = useMemo(() => getPriceLimit(products), [products]);
   const categoryOptions = useMemo(
     () =>
-      catalogCategories.map((category) => ({
+      categories.map((category) => ({
         label: category.nameKa,
         value: category.slug,
         count: countProductsForCategory(products, category)
       })),
-    [products]
+    [categories, products]
   );
   const brandOptions = useMemo(
     () => createCountOptions(products, "brand", brandOrder),
@@ -132,6 +134,7 @@ export function ProductCatalog({
   );
 
   const [query, setQuery] = useState(initialSearchQuery);
+  const deferredQuery = useDeferredValue(query);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedAvailability, setSelectedAvailability] = useState<
@@ -151,40 +154,19 @@ export function ProductCatalog({
     discount: true
   });
 
-  useEffect(() => {
-    if (!filtersOpen) {
-      return;
+  const scopedProducts = useMemo(() => {
+    if (!selectedCatalogSubcategory) {
+      return categoryProducts;
     }
 
-    const previousOverflow = document.body.style.overflow;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setFiltersOpen(false);
-      }
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [filtersOpen]);
+    return categoryProducts.filter((product) =>
+      productMatchesSubcategory(product, selectedCatalogSubcategory)
+    );
+  }, [categoryProducts, selectedCatalogSubcategory]);
 
   const filteredProducts = useMemo(() => {
-    const scopedProducts = selectedCatalogCategory
-      ? products.filter((product) => {
-          const matchesCategory = productMatchesCategory(product, selectedCatalogCategory);
-          const matchesSubcategory = selectedCatalogSubcategory
-            ? productMatchesSubcategory(product, selectedCatalogSubcategory)
-            : true;
-
-          return matchesCategory && matchesSubcategory;
-        })
-      : products;
-    const searchedProducts = query.trim()
-      ? searchProducts(scopedProducts, query)
+    const searchedProducts = deferredQuery.trim()
+      ? searchProducts(scopedProducts, deferredQuery)
       : [...scopedProducts];
     const minPriceCents = minPrice * 100;
     const maxPriceCents = maxPrice * 100;
@@ -195,7 +177,7 @@ export function ProductCatalog({
         const matchesCategory =
           selectedCategories.length === 0 ||
           selectedCategories.some((categorySlug) => {
-            const category = getCategoryBySlug(categorySlug);
+            const category = getCategoryBySlug(categorySlug, categories);
 
             return category
               ? productMatchesCategory(product, category)
@@ -221,13 +203,12 @@ export function ProductCatalog({
     discountOnly,
     maxPrice,
     minPrice,
-    products,
-    query,
+    categories,
+    deferredQuery,
+    scopedProducts,
     selectedAvailability,
     selectedBrands,
     selectedCategories,
-    selectedCatalogCategory,
-    selectedCatalogSubcategory,
     sort
   ]);
 
@@ -345,6 +326,7 @@ export function ProductCatalog({
               <div className="p-4">
                 <FilterContent
                   brandOptions={brandOptions}
+                  categories={categories}
                   categoryOptions={categoryOptions}
                   activeFilters={activeFilters}
                   clearFilters={clearFilters}
@@ -605,67 +587,66 @@ export function ProductCatalog({
         </div>
       </div>
 
-      {filtersOpen ? (
-        <div className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true">
+      <SlideDrawer
+        ariaLabel="ფილტრები"
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        side="left"
+        viewportClassName="inset-0 z-[70] lg:hidden"
+        backdropClassName="bg-[#041C32]/35 backdrop-blur-sm"
+        panelClassName="w-full max-w-sm overflow-hidden bg-white shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-[#E5EAF0] px-4 py-4">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="size-5 text-[#F58220]" />
+            <h2 className="text-lg font-black text-[#041C32]">ფილტრები</h2>
+          </div>
           <button
             type="button"
             aria-label="ფილტრების დახურვა"
-            className="absolute inset-0 bg-[#041C32]/35 backdrop-blur-sm"
+            className="focus-ring grid size-10 place-items-center rounded-md border border-[#E5EAF0] text-[#072B4D]"
             onClick={() => setFiltersOpen(false)}
-          />
-          <div className="absolute inset-y-0 left-0 flex w-full max-w-sm flex-col overflow-hidden bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#E5EAF0] px-4 py-4">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="size-5 text-[#F58220]" />
-                <h2 className="text-lg font-black text-[#041C32]">ფილტრები</h2>
-              </div>
-              <button
-                type="button"
-                aria-label="ფილტრების დახურვა"
-                className="focus-ring grid size-10 place-items-center rounded-md border border-[#E5EAF0] text-[#072B4D]"
-                onClick={() => setFiltersOpen(false)}
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-                <FilterContent
-                  brandOptions={brandOptions}
-                  categoryOptions={categoryOptions}
-                  activeFilters={activeFilters}
-                  clearFilters={clearFilters}
-                availabilityOptions={availabilityOptions}
-                  discountOnly={discountOnly}
-                  maxPrice={maxPrice}
-                  minPrice={minPrice}
-                  priceLimit={priceLimit}
-                  selectedAvailability={selectedAvailability}
-                  selectedBrands={selectedBrands}
-                  selectedCategories={selectedCategories}
-                  openSections={openSections}
-                  setDiscountOnly={updateDiscountOnly}
-                  setMaxPrice={updateMaxPrice}
-                  setMinPrice={updateMinPrice}
-                  setShowAllCategories={setShowAllCategories}
-                  showAllCategories={showAllCategories}
-                  toggleAvailability={toggleAvailability}
-                  toggleBrand={toggleBrand}
-                toggleCategory={toggleCategory}
-                toggleSection={toggleSection}
-              />
-            </div>
-            <div className="grid gap-3 border-t border-[#E5EAF0] p-4">
-              <button
-                type="button"
-                onClick={() => setFiltersOpen(false)}
-                className="focus-ring h-11 rounded-md bg-[#F58220] text-sm font-black text-white transition hover:bg-[#de741d]"
-              >
-                შედეგების ნახვა ({filteredProducts.length})
-              </button>
-            </div>
-          </div>
+          >
+            <X className="size-5" />
+          </button>
         </div>
-      ) : null}
+        <div className="flex-1 overflow-y-auto p-4">
+          <FilterContent
+            brandOptions={brandOptions}
+            categories={categories}
+            categoryOptions={categoryOptions}
+            activeFilters={activeFilters}
+            clearFilters={clearFilters}
+            availabilityOptions={availabilityOptions}
+            discountOnly={discountOnly}
+            maxPrice={maxPrice}
+            minPrice={minPrice}
+            priceLimit={priceLimit}
+            selectedAvailability={selectedAvailability}
+            selectedBrands={selectedBrands}
+            selectedCategories={selectedCategories}
+            openSections={openSections}
+            setDiscountOnly={updateDiscountOnly}
+            setMaxPrice={updateMaxPrice}
+            setMinPrice={updateMinPrice}
+            setShowAllCategories={setShowAllCategories}
+            showAllCategories={showAllCategories}
+            toggleAvailability={toggleAvailability}
+            toggleBrand={toggleBrand}
+            toggleCategory={toggleCategory}
+            toggleSection={toggleSection}
+          />
+        </div>
+        <div className="grid gap-3 border-t border-[#E5EAF0] p-4">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(false)}
+            className="focus-ring h-11 rounded-md bg-[#F58220] text-sm font-black text-white transition hover:bg-[#de741d]"
+          >
+            შედეგების ნახვა ({filteredProducts.length})
+          </button>
+        </div>
+      </SlideDrawer>
     </section>
   );
 }
@@ -885,6 +866,7 @@ function PaginationButton({
 
 function FilterContent({
   brandOptions,
+  categories,
   categoryOptions,
   availabilityOptions,
   discountOnly,
@@ -908,6 +890,7 @@ function FilterContent({
   toggleSection
 }: {
   brandOptions: CountOption[];
+  categories: ReturnType<typeof useCatalogCategories>;
   categoryOptions: CountOption[];
   availabilityOptions: AvailabilityOption[];
   discountOnly: boolean;
@@ -985,6 +968,19 @@ function FilterContent({
       </section>
 
       <AccordionSection
+        count={1}
+        open={openSections.discount}
+        title="ფასდაკლება"
+        onToggle={() => toggleSection("discount")}
+      >
+        <SidebarToggle
+          checked={discountOnly}
+          label="ფასდაკლებული პროდუქტები"
+          onChange={setDiscountOnly}
+        />
+      </AccordionSection>
+
+      <AccordionSection
         count={availabilityOptions.length}
         open={openSections.availability}
         title="ხელმისაწვდომობა"
@@ -1011,7 +1007,7 @@ function FilterContent({
       >
         <div className="grid gap-2">
           {visibleCategories.map((option) => {
-            const CategoryIcon = getCategoryBySlug(option.value)?.icon ?? Settings;
+            const CategoryIcon = getCategoryBySlug(option.value, categories)?.icon ?? Settings;
 
             return (
               <SidebarRow
@@ -1059,19 +1055,6 @@ function FilterContent({
             );
           })}
         </div>
-      </AccordionSection>
-
-      <AccordionSection
-        count={1}
-        open={openSections.discount}
-        title="ფასდაკლება"
-        onToggle={() => toggleSection("discount")}
-      >
-        <SidebarToggle
-          checked={discountOnly}
-          label="ფასდაკლებული პროდუქტები"
-          onChange={setDiscountOnly}
-        />
       </AccordionSection>
 
       {activeFilters ? (
@@ -1334,6 +1317,8 @@ function BrandSidebarRow({
             alt={`${label} logo`}
             width={158}
             height={48}
+            sizes="142px"
+            quality={70}
             className="max-h-11 w-auto max-w-[142px] object-contain"
           />
         ) : (

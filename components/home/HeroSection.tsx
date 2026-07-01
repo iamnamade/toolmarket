@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { heroStats } from "@/data/site";
@@ -49,6 +47,7 @@ export function HeroSection() {
                 alt="პროფესიონალური ხელსაწყოები"
                 fill
                 priority
+                quality={82}
                 sizes="(min-width: 1024px) 48vw, 100vw"
                 className="object-cover object-right"
               />

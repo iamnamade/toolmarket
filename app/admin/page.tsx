@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | ToolMarket.ge",
-  description: "ToolMarket.ge ადმინისტრაციული პანელი"
+  title: "დეშბორდი | ToolMarket.ge",
+  description: "ToolMarket.ge ადმინისტრაციის დეშბორდი",
 };
 
 export default function AdminPage() {

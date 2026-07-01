@@ -3,6 +3,7 @@ import { ProductCatalog } from "@/components/catalog/ProductCatalog";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { allProducts } from "@/data/products";
+import { createPageMetadata } from "@/lib/seo";
 
 type ProductsPageProps = {
   searchParams?: Promise<{
@@ -12,10 +13,12 @@ type ProductsPageProps = {
   }>;
 };
 
-export const metadata: Metadata = {
-  title: "პროდუქტების კატალოგი | ToolMarket.ge",
-  description: "ToolMarket.ge-ის ხელსაწყოების, მასალებისა და ტექნიკური პროდუქტების კატალოგი"
-};
+export const metadata: Metadata = createPageMetadata({
+  title: "პროდუქტები",
+  description:
+    "ToolMarket.ge-ზე დაათვალიერეთ ხელსაწყოების, სამშენებლო მასალების და ტექნიკური პროდუქტების სრული კატალოგი.",
+  path: "/products"
+});
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const resolvedSearchParams = await searchParams;

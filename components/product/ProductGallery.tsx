@@ -48,7 +48,8 @@ export function ProductGallery({ title, images, discount }: ProductGalleryProps)
           alt={title}
           fill
           priority
-          sizes="(min-width: 1024px) 55vw, 100vw"
+          quality={82}
+          sizes="(min-width: 1280px) 34rem, (min-width: 1024px) 50vw, 100vw"
           style={{ transformOrigin: zoomOrigin }}
           className="animate-[product-image-fade_250ms_ease] object-contain p-7 transition-transform duration-300 ease-out md:group-hover:scale-[1.4] lg:p-10"
         />
@@ -77,6 +78,7 @@ export function ProductGallery({ title, images, discount }: ProductGalleryProps)
                 alt={`${title} - ხედი ${index + 1}`}
                 fill
                 sizes="120px"
+                quality={70}
                 className="object-contain p-2"
               />
             </button>

@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "prisma generate && next build --webpack",
+    "build": "prisma generate && next typegen && node scripts/sync-next-dev-types.mjs && next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "prisma generate && next typegen && tsc --noEmit"
+    "typecheck": "prisma generate && next typegen && node scripts/sync-next-dev-types.mjs && tsc --noEmit",
+    "sync:categories": "tsx scripts/sync-catalog-categories.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

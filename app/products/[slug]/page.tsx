@@ -11,6 +11,7 @@ import {
   getRecentlyViewedProducts,
   getSimilarProducts
 } from "@/data/products";
+import { createPageMetadata } from "@/lib/seo";
 
 type ProductPageProps = {
   params: Promise<{
@@ -30,24 +31,27 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
   if (!product) {
     return {
-      title: "პროდუქტი ვერ მოიძებნა | ToolMarket.ge"
+      title: "პროდუქტი ვერ მოიძებნა",
+      robots: {
+        index: false,
+        follow: false
+      }
     };
   }
 
   return {
-    title: `${product.title} | ${product.brand} | ToolMarket.ge`,
-    description: product.shortDescription,
-    category: product.category,
-    openGraph: {
-      title: `${product.title} | ToolMarket.ge`,
+    ...createPageMetadata({
+      title: `${product.title} | ${product.brand}`,
       description: product.shortDescription,
+      path: `/products/${slug}`,
       images: [
         {
           url: product.images[0] ?? product.image,
           alt: product.title
         }
       ]
-    }
+    }),
+    category: product.category
   };
 }
 

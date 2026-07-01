@@ -85,6 +85,8 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { getCategoryIcon, getCategoryIconKey } from "@/lib/category-icons";
+import type { CategoryIconKey } from "@/lib/category-icons";
 import type { Product } from "@/types/catalog";
 
 export type CatalogChildCategory = {
@@ -104,6 +106,15 @@ export type CatalogCategory = {
   productCategoryNames?: string[];
   productIds?: string[];
   productCount?: number;
+};
+
+export type CatalogChildCategoryData = Omit<CatalogChildCategory, "icon"> & {
+  iconKey: CategoryIconKey;
+};
+
+export type CatalogCategoryData = Omit<CatalogCategory, "icon" | "children"> & {
+  iconKey: CategoryIconKey;
+  children: CatalogChildCategoryData[];
 };
 
 export const catalogCategories: CatalogCategory[] = [
@@ -311,8 +322,38 @@ export function subcategoryHref(categorySlug: string, subcategorySlug: string) {
   return `/products?category=${categorySlug}&subcategory=${subcategorySlug}`;
 }
 
-export function getCategoryBySlug(slug?: string) {
-  return catalogCategories.find((category) => category.slug === slug) ?? null;
+export function serializeCatalogCategories(categories: CatalogCategory[] = catalogCategories): CatalogCategoryData[] {
+  return categories.map((category) => ({
+    nameKa: category.nameKa,
+    slug: category.slug,
+    iconKey: getCategoryIconKey(category.icon),
+    description: category.description,
+    productCategoryNames: category.productCategoryNames,
+    productIds: category.productIds,
+    productCount: category.productCount,
+    children: category.children.map((child) => ({
+      nameKa: child.nameKa,
+      slug: child.slug,
+      iconKey: getCategoryIconKey(child.icon),
+      productIds: child.productIds,
+      productCount: child.productCount,
+    })),
+  }));
+}
+
+export function resolveCatalogCategories(categories: CatalogCategoryData[]): CatalogCategory[] {
+  return categories.map((category) => ({
+    ...category,
+    icon: getCategoryIcon(category.iconKey),
+    children: category.children.map((child) => ({
+      ...child,
+      icon: getCategoryIcon(child.iconKey),
+    })),
+  }));
+}
+
+export function getCategoryBySlug(slug?: string, categories: CatalogCategory[] = catalogCategories) {
+  return categories.find((category) => category.slug === slug) ?? null;
 }
 
 export function getSubcategoryBySlug(category: CatalogCategory | null, slug?: string) {

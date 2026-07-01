@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
+const RECAPTCHA_WIDTH = 304;
+const RECAPTCHA_HEIGHT = 78;
+
 type RecaptchaApi = {
   ready?: (callback: () => void) => void;
   render: (
@@ -162,12 +165,41 @@ export function RecaptchaCheckbox({
   resetNonce?: number;
   siteKey: string;
 }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<number | null>(null);
   const readyCallbackRef = useRef(onReadyChange);
   const tokenCallbackRef = useRef(onTokenChange);
+  const [widgetScale, setWidgetScale] = useState(1);
   const [widgetError, setWidgetError] = useState<string | null>(null);
   const missingSiteKeyError = !siteKey ? "reCAPTCHA-ის საჯარო გასაღები ვერ მოიძებნა." : null;
+
+  useEffect(() => {
+    if (!wrapperRef.current) {
+      return;
+    }
+
+    const updateScale = () => {
+      const availableWidth = wrapperRef.current?.clientWidth ?? RECAPTCHA_WIDTH;
+
+      if (availableWidth <= 0) {
+        return;
+      }
+
+      setWidgetScale(Math.min(availableWidth / RECAPTCHA_WIDTH, 1));
+    };
+
+    updateScale();
+
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(wrapperRef.current);
+    window.addEventListener("resize", updateScale);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScale);
+    };
+  }, []);
 
   useEffect(() => {
     readyCallbackRef.current = onReadyChange;
@@ -237,8 +269,20 @@ export function RecaptchaCheckbox({
 
   return (
     <div className="grid gap-2">
-      <div className="overflow-x-auto">
-        <div ref={containerRef} className="min-h-[78px] min-w-[304px]" />
+      <div ref={wrapperRef} className="w-full max-w-full overflow-hidden">
+        <div
+          className="origin-top-left"
+          style={{ height: `${Math.ceil(RECAPTCHA_HEIGHT * widgetScale)}px` }}
+        >
+          <div
+            ref={containerRef}
+            className="min-h-[78px] w-[304px] max-w-none"
+            style={{
+              transform: `scale(${widgetScale})`,
+              transformOrigin: "top left",
+            }}
+          />
+        </div>
       </div>
       {missingSiteKeyError || widgetError ? (
         <p className="text-xs font-bold text-[#D92D20]">{missingSiteKeyError ?? widgetError}</p>

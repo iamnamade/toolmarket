@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { AdminSettings } from "@/components/admin/AdminSettings";
+import { AdminSettingsOverview } from "@/components/admin/AdminSettingsOverview";
 
 export const metadata: Metadata = {
-  title: "Admin Settings | ToolMarket.ge",
-  description: "ToolMarket.ge store and administration settings"
+  title: "პარამეტრები | ToolMarket.ge",
+  description: "ToolMarket.ge ადმინისტრაციის პარამეტრების გვერდი",
 };
 
 export default function AdminSettingsPage() {
-  return <AdminSettings />;
+  return <AdminSettingsOverview />;
 }

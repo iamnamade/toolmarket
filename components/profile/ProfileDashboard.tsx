@@ -434,7 +434,7 @@ export function ProfileDashboard() {
   };
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-12 pt-8 lg:px-6 lg:pb-16">
+    <section className="mx-auto max-w-7xl min-w-0 px-4 pb-12 pt-8 lg:px-6 lg:pb-16">
       {notice ? (
         <NoticeBanner tone={notice.tone} text={notice.text} />
       ) : null}
@@ -673,8 +673,8 @@ export function ProfileDashboard() {
             description="მიმდინარე მონაცემები და შეკვეთების მოკლე სტატისტიკა."
             accent="dark"
           >
-            <div className="grid gap-5">
-              <div className="flex items-start gap-4">
+            <div className="grid w-full min-w-0 gap-5">
+              <div className="flex w-full min-w-0 flex-wrap items-start gap-4 sm:flex-nowrap">
                 <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-white/10 text-white">
                   <span className="text-lg font-black">
                     {savedPersonal.firstName.slice(0, 1)}
@@ -682,22 +682,22 @@ export function ProfileDashboard() {
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-2xl font-black text-white">
+                  <h2 className="break-words text-2xl font-black text-white">
                     {savedPersonal.firstName} {savedPersonal.lastName}
                   </h2>
-                  <p className="mt-1 text-sm text-white/72">{savedPersonal.email}</p>
+                  <p className="mt-1 break-all text-sm text-white/72">{savedPersonal.email}</p>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-white/90">
+                    <span className="max-w-full break-words rounded-full bg-white/10 px-3 py-1 text-white/90">
                       {savedPersonal.phone}
                     </span>
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-white/90">
+                    <span className="max-w-full break-words rounded-full bg-white/10 px-3 py-1 text-white/90">
                       {savedAddress.city}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid w-full min-w-0 gap-3 sm:grid-cols-3">
                 <MiniStat icon={<Package className="size-4" />} label="შეკვეთები" value={String(orders.length)} />
                 <MiniStat
                   icon={<CheckCircle2 className="size-4" />}
@@ -711,7 +711,7 @@ export function ProfileDashboard() {
                 />
               </div>
 
-              <div className="grid gap-3 rounded-xl border border-white/12 bg-white/8 p-4 text-sm text-white/82 sm:grid-cols-2">
+              <div className="grid w-full min-w-0 gap-3 rounded-xl border border-white/12 bg-white/8 p-4 text-sm text-white/82 sm:grid-cols-2">
                 <SummaryLine icon={<Mail className="size-4" />} label="ელ. ფოსტა" value={savedPersonal.email} />
                 <SummaryLine icon={<Phone className="size-4" />} label="ტელეფონი" value={savedPersonal.phone} />
                 <SummaryLine
@@ -726,7 +726,7 @@ export function ProfileDashboard() {
                 />
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2">
                 <InfoPill
                   icon={<ShieldCheck className="size-4" />}
                   text={`ჯამური დახარჯული: ${formatPrice(totalSpent)}`}
@@ -796,13 +796,13 @@ function SectionCard({
     <section
       id={id}
       className={[
-        "scroll-mt-32 rounded-xl border p-5 shadow-sm sm:p-6",
+        "scroll-mt-32 min-w-0 max-w-full rounded-xl border p-5 shadow-sm sm:p-6",
         isDark
           ? "border-[#0E3C69] bg-[#062B4F] text-white"
           : "border-[#E5EAF0] bg-white text-[#041C32]"
       ].join(" ")}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex min-w-0 items-start gap-3">
         <span
           className={[
             "grid size-11 shrink-0 place-items-center rounded-lg",
@@ -852,7 +852,7 @@ function TextField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className={[
-          "focus-ring h-12 rounded-md border bg-white px-4 text-sm font-medium text-[#102033] placeholder:text-[#8A95A8]",
+          "focus-ring h-12 w-full min-w-0 rounded-md border bg-white px-4 text-sm font-medium text-[#102033] placeholder:text-[#8A95A8]",
           error ? "border-[#F2B8B5]" : "border-[#E5EAF0]"
         ].join(" ")}
         aria-invalid={Boolean(error)}
@@ -884,7 +884,7 @@ function TextAreaField({
         placeholder={placeholder}
         rows={4}
         className={[
-          "focus-ring resize-none rounded-md border bg-white px-4 py-3 text-sm font-medium text-[#102033] placeholder:text-[#8A95A8]",
+          "focus-ring w-full min-w-0 resize-none rounded-md border bg-white px-4 py-3 text-sm font-medium text-[#102033] placeholder:text-[#8A95A8]",
           error ? "border-[#F2B8B5]" : "border-[#E5EAF0]"
         ].join(" ")}
         aria-invalid={Boolean(error)}
@@ -918,7 +918,7 @@ function ActionRow({
       <button
         type="button"
         onClick={onCancel}
-        className="focus-ring inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#E5EAF0] bg-white px-4 text-sm font-black text-[#072B4D] transition hover:border-[#F58220] hover:text-[#041C32]"
+        className="focus-ring inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-[#E5EAF0] bg-white px-4 text-sm font-black text-[#072B4D] transition hover:border-[#F58220] hover:text-[#041C32] sm:w-auto"
       >
         <RotateCcw className="size-4" />
         {secondaryLabel}
@@ -926,7 +926,7 @@ function ActionRow({
       <button
         type="submit"
         disabled={loading}
-        className="focus-ring inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md bg-[#F58220] px-5 text-sm font-black text-white transition hover:bg-[#de741d] disabled:cursor-not-allowed disabled:opacity-75"
+        className="focus-ring inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-[#F58220] px-5 text-sm font-black text-white transition hover:bg-[#de741d] disabled:cursor-not-allowed disabled:opacity-75 sm:w-auto"
       >
         {loading ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
         {loading ? "იტვირთება..." : primaryLabel}
@@ -983,7 +983,7 @@ function MiniStat({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/12 bg-white/8 p-4">
+    <div className="min-w-0 w-full rounded-xl border border-white/12 bg-white/8 p-4">
       <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-white/55">
         {icon}
         {label}
@@ -1003,7 +1003,7 @@ function SummaryLine({
   value: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-white/12 bg-white/8 px-3 py-3">
+    <div className="flex min-w-0 w-full items-start gap-3 rounded-lg border border-white/12 bg-white/8 px-3 py-3">
       <span className="mt-0.5 text-white/70">{icon}</span>
       <span className="min-w-0">
         <span className="block text-xs font-bold uppercase tracking-[0.12em] text-white/55">
@@ -1023,9 +1023,9 @@ function InfoPill({
   text: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-white/12 bg-white/8 px-3 py-3 text-sm font-bold text-white/88">
+    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/12 bg-white/8 px-3 py-3 text-sm font-bold text-white/88">
       <span className="text-white/70">{icon}</span>
-      {text}
+      <span className="min-w-0 break-words">{text}</span>
     </div>
   );
 }
@@ -1065,7 +1065,7 @@ function OrderCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 sm:justify-end">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 sm:flex-nowrap sm:justify-end">
           <div className="text-right">
             <span className="block text-xs font-bold uppercase tracking-[0.12em] text-[#6B7280]">
               ჯამი

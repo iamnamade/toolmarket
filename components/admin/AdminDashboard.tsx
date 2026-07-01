@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -11,21 +12,20 @@ import {
   Users
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from "recharts";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { formatPrice } from "@/lib/price";
 import type { LucideIcon } from "lucide-react";
+
+const AdminDashboardCharts = dynamic(
+  () =>
+    import("@/components/admin/AdminDashboardCharts").then(
+      (module) => module.AdminDashboardCharts
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardChartsSkeleton />,
+  }
+);
 
 type OrderStatus = "ახალი" | "დამუშავებაშია" | "გზაშია" | "დასრულებულია";
 
@@ -51,25 +51,6 @@ const metrics: Array<{
   { label: "აქტიური მომხმარებლები", value: "127", growth: "+15.3%", comparison: "წინა პერიოდთან", icon: Users, color: "#168A50", background: "#EAF8EF" },
   { label: "პროდუქტები", value: "1,258", growth: "+3.1%", comparison: "წინა პერიოდთან", icon: Package, color: "#F58220", background: "#FFF0E3" },
   { label: "საშუალო შეკვეთა", value: "374.25 ₾", growth: "+5.8%", comparison: "წინა პერიოდთან", icon: ShoppingBag, color: "#7C4DCC", background: "#F3EDFF" }
-];
-
-const revenueData = [
-  { date: "1 ივნ", revenue: 6200 },
-  { date: "4 ივნ", revenue: 18400 },
-  { date: "7 ივნ", revenue: 22100 },
-  { date: "10 ივნ", revenue: 13800 },
-  { date: "13 ივნ", revenue: 26400 },
-  { date: "16 ივნ", revenue: 15800 },
-  { date: "19 ივნ", revenue: 34800 },
-  { date: "21 ივნ", revenue: 31740 }
-];
-
-const orderDistribution = [
-  { name: "ახალი", value: 120, color: "#2878D0" },
-  { name: "დამუშავებაშია", value: 98, color: "#0A98C6" },
-  { name: "გზაშია", value: 65, color: "#42A86B" },
-  { name: "დასრულებულია", value: 42, color: "#F6A436" },
-  { name: "გაუქმებული", value: 17, color: "#E25E55" }
 ];
 
 const recentOrders: DashboardOrder[] = [
@@ -131,45 +112,7 @@ export function AdminDashboard() {
         {metrics.map((metric) => <MetricCard key={metric.label} {...metric} />)}
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-        <ChartCard title="გაყიდვების დინამიკა" description={`${startDate} - ${endDate}`}>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={revenueData} margin={{ top: 10, right: 12, left: -8, bottom: 0 }}>
-                <CartesianGrid stroke="#E6EBEB" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} tickFormatter={(value) => `${value / 1000}K`} />
-                <Tooltip formatter={(value) => formatPrice(Number(value))} contentStyle={{ borderRadius: 8, borderColor: "#E6EBEB", fontSize: 12 }} />
-                <Line type="monotone" dataKey="revenue" stroke="#1473E6" strokeWidth={3} dot={{ r: 3, fill: "#FFFFFF", strokeWidth: 2 }} activeDot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
-
-        <ChartCard title="შეკვეთების სტატუსი" description="მიმდინარე პერიოდში">
-          <div className="grid min-h-[300px] items-center gap-4 sm:grid-cols-[180px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[180px_minmax(0,1fr)]">
-            <div className="h-[190px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={orderDistribution} dataKey="value" nameKey="name" innerRadius={50} outerRadius={78} paddingAngle={2}>
-                    {orderDistribution.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
-                  </Pie>
-                  <Tooltip formatter={(value) => `${value} შეკვეთა`} contentStyle={{ borderRadius: 8, borderColor: "#E6EBEB", fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid gap-2">
-              {orderDistribution.map((entry) => (
-                <div key={entry.name} className="flex items-center gap-2 text-xs">
-                  <span className="size-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                  <span className="min-w-0 flex-1 truncate text-[#6B7280]">{entry.name}</span>
-                  <span className="font-black text-[#102033]">{entry.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </ChartCard>
-      </section>
+      <AdminDashboardCharts startDate={startDate} endDate={endDate} />
 
       <section className="mt-6 overflow-hidden rounded-xl border border-[#E6EBEB] bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-[#E6EBEB] p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -226,15 +169,12 @@ function MetricCard({ label, value, growth, comparison, icon: Icon, color, backg
   );
 }
 
-function ChartCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function DashboardChartsSkeleton() {
   return (
-    <article className="min-w-0 rounded-xl border border-[#E6EBEB] bg-white p-5 shadow-sm">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold text-[#0D1B2A]">{title}</h2>
-        <p className="mt-1 text-xs text-[#6B7280]">{description}</p>
-      </div>
-      {children}
-    </article>
+    <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+      <div className="min-h-[372px] animate-pulse rounded-xl border border-[#E6EBEB] bg-white p-5 shadow-sm" />
+      <div className="min-h-[372px] animate-pulse rounded-xl border border-[#E6EBEB] bg-white p-5 shadow-sm" />
+    </section>
   );
 }
 

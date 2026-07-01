@@ -16,6 +16,7 @@ import {
   useEffect,
   useState
 } from "react";
+import { SlideDrawer } from "@/components/ui/SlideDrawer";
 import { featuredProducts } from "@/data/products";
 import { formatPrice, formatPriceFromCents, parsePriceToCents } from "@/lib/price";
 import type { Product } from "@/types/catalog";
@@ -56,28 +57,6 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<Product[]>(initialWishlist);
   const [activeDrawer, setActiveDrawer] = useState<DrawerType | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
-
-  useEffect(() => {
-    if (!activeDrawer) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setActiveDrawer(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [activeDrawer]);
 
   useEffect(() => {
     if (!toast) {
@@ -170,24 +149,6 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
   return (
     <CommerceContext.Provider value={contextValue}>
       {children}
-
-      <div
-        className={[
-          "fixed inset-0 z-[70] transition",
-          activeDrawer
-            ? "pointer-events-auto bg-[#041C32]/55 opacity-100"
-            : "pointer-events-none bg-transparent opacity-0"
-        ].join(" ")}
-        aria-hidden={!activeDrawer}
-      >
-        <button
-          type="button"
-          aria-label="პანელის დახურვა"
-          className="absolute inset-0 cursor-default"
-          onClick={() => setActiveDrawer(null)}
-          tabIndex={activeDrawer ? 0 : -1}
-        />
-      </div>
 
       <Drawer
         title="კალათა"
@@ -361,15 +322,13 @@ function Drawer({
   children: React.ReactNode;
 }) {
   return (
-    <aside
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      aria-hidden={!open}
-      className={[
-        "fixed bottom-0 right-0 top-0 z-[80] flex w-full max-w-md flex-col bg-[#F7F8FA] shadow-[-16px_0_36px_rgba(4,28,50,0.16)] transition-transform duration-300 ease-out",
-        open ? "translate-x-0" : "translate-x-full"
-      ].join(" ")}
+    <SlideDrawer
+      ariaLabel={title}
+      open={open}
+      onClose={onClose}
+      side="right"
+      viewportClassName="inset-0 z-[80]"
+      panelClassName="w-full max-w-md bg-[#F7F8FA] shadow-[-16px_0_36px_rgba(4,28,50,0.16)]"
     >
       <div className="flex h-18 shrink-0 items-center justify-between gap-4 border-b border-[#E5EAF0] bg-white px-4 sm:px-5">
         <div>
@@ -380,14 +339,13 @@ function Drawer({
           type="button"
           aria-label={`${title} - დახურვა`}
           onClick={onClose}
-          tabIndex={open ? 0 : -1}
           className="focus-ring grid size-10 place-items-center rounded-md border border-[#E5EAF0] bg-white text-[#072B4D] transition hover:border-[#F58220] hover:text-[#F58220]"
         >
           <X className="size-5" />
         </button>
       </div>
       {children}
-    </aside>
+    </SlideDrawer>
   );
 }
 
@@ -417,6 +375,7 @@ function CartItem({
             alt={item.product.title}
             fill
             sizes="96px"
+            quality={65}
             className="object-contain p-2"
           />
         </Link>
@@ -482,6 +441,7 @@ function WishlistItem({
             alt={product.title}
             fill
             sizes="96px"
+            quality={65}
             className="object-contain p-2"
           />
         </Link>

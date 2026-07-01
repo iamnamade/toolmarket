@@ -1,5 +1,7 @@
 import type { Product } from "@/types/catalog";
 
+const productSearchTextCache = new Map<string, string>();
+
 export function searchProducts(products: Product[], query: string, limit?: number) {
   const normalizedQuery = normalizeSearchText(query);
 
@@ -7,11 +9,21 @@ export function searchProducts(products: Product[], query: string, limit?: numbe
     return [];
   }
 
-  const results = products.filter((product) =>
-    getProductSearchText(product).includes(normalizedQuery)
-  );
+  const results: Product[] = [];
 
-  return typeof limit === "number" ? results.slice(0, limit) : results;
+  for (const product of products) {
+    if (!getProductSearchText(product).includes(normalizedQuery)) {
+      continue;
+    }
+
+    results.push(product);
+
+    if (typeof limit === "number" && results.length >= limit) {
+      break;
+    }
+  }
+
+  return results;
 }
 
 export function buildSearchHref(query: string) {
@@ -23,7 +35,13 @@ export function buildSearchHref(query: string) {
 }
 
 function getProductSearchText(product: Product) {
-  return normalizeSearchText(
+  const cachedValue = productSearchTextCache.get(product.id);
+
+  if (cachedValue) {
+    return cachedValue;
+  }
+
+  const searchText = normalizeSearchText(
     [
       product.title,
       product.name,
@@ -37,6 +55,10 @@ function getProductSearchText(product: Product) {
       Object.values(product.specifications).join(" ")
     ].join(" ")
   );
+
+  productSearchTextCache.set(product.id, searchText);
+
+  return searchText;
 }
 
 function normalizeSearchText(value: string) {

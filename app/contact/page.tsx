@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
 import { Clock, Mail, MapPin, Navigation, Phone } from "lucide-react";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "კონტაქტი",
+  description:
+    "დაგვიკავშირდით ToolMarket.ge-ს შეკვეთების, პროდუქტების და თანამშრომლობის საკითხებზე.",
+  path: "/contact"
+});
 
 const contactCards = [
   {

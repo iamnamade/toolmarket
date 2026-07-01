@@ -7,10 +7,10 @@ import {
   Truck
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { DeferredRecentlyViewedProducts } from "@/components/product/DeferredRecentlyViewedProducts";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchaseCard } from "@/components/product/ProductPurchaseCard";
 import { ProductTabs } from "@/components/product/ProductTabs";
-import { RecentlyViewedProducts } from "@/components/product/RecentlyViewedProducts";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { formatPrice } from "@/lib/price";
 import type { Product, ProductAvailability, ProductDetail } from "@/types/catalog";
@@ -173,7 +173,7 @@ export function ProductDetailView({
 
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6 lg:py-14">
-          <RecentlyViewedProducts products={recentlyViewedProducts} />
+          <DeferredRecentlyViewedProducts products={recentlyViewedProducts} />
         </div>
       </section>
     </>

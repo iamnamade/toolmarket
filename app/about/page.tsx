@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Award,
@@ -43,11 +42,13 @@ const offerItems = [
   "ელექტროობა, განათება და ტექნიკური პროდუქტები"
 ];
 
+/*
 export const metadata: Metadata = {
   title: "ჩვენ შესახებ | ToolMarket.ge",
   description:
     "ToolMarket.ge არის ონლაინ სივრცე ხელსაწყოების, სამშენებლო მასალებისა და ტექნიკური პროდუქტებისთვის."
 };
+*/
 
 export default function AboutPage() {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { BrandSection } from "@/components/home/BrandSection";
 import { HomepageHeaderHero } from "@/components/home/HomepageHeaderHero";
@@ -9,7 +10,10 @@ import {
   discountProducts,
   featuredProducts
 } from "@/data/products";
+import { createPageMetadata } from "@/lib/seo";
 import { searchProducts } from "@/lib/search-products";
+
+export const metadata: Metadata = createPageMetadata();
 
 type HomeProps = {
   searchParams?: Promise<{
@@ -25,7 +29,7 @@ export default async function Home({ searchParams }: HomeProps) {
     : rawSearchQuery ?? "";
   const trimmedSearchQuery = searchQuery.trim();
   const searchResults = trimmedSearchQuery
-    ? searchProducts(allProducts, trimmedSearchQuery)
+    ? searchProducts(allProducts, trimmedSearchQuery, 8)
     : [];
 
   return (

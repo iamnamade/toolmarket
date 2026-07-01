@@ -71,6 +71,7 @@ model Category {
   id        String     @id @default(cuid())
   name      String
   slug      String     @unique
+  iconKey   String?
   parentId  String?
   sortOrder Int        @default(0)
   isActive  Boolean    @default(true)

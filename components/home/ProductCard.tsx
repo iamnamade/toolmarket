@@ -18,6 +18,9 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
   const imageClassName = compact
     ? "object-contain p-5 transition duration-300 group-hover:scale-[1.025] sm:p-6"
     : "object-contain p-6 transition duration-300 group-hover:scale-[1.025] sm:p-8";
+  const imageSizes = compact
+    ? "(min-width: 1280px) 18rem, (min-width: 1024px) 21rem, (min-width: 640px) calc(50vw - 2rem), 92vw"
+    : "(min-width: 1280px) 19rem, (min-width: 640px) calc(50vw - 2rem), 94vw";
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-[#E5EAF0] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#F58220] hover:shadow-[0_16px_36px_rgba(4,28,50,0.1)]">
@@ -36,7 +39,8 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
             src={product.image}
             alt={product.title}
             fill
-            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            sizes={imageSizes}
+            quality={70}
             className={imageClassName}
           />
         </Link>

@@ -590,7 +590,7 @@ export function AdminProductsManager() {
     );
     setNotice({
       title: "პროდუქტი წაიშალა",
-      text: `${deleteTarget.name} დროებითი mock სიიდან ამოიშალა.`,
+      text: `${deleteTarget.name} სიიდან წაიშალა.`,
       tone: "danger"
     });
     setDeleteTarget(null);
@@ -1167,7 +1167,7 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
         onClick={onClose}
         className="absolute inset-0 bg-[#041C32]/45 backdrop-blur-sm"
       />
-      <aside className="absolute inset-y-0 left-0 flex w-[min(320px,88vw)] flex-col bg-[#041C32] text-white shadow-2xl">
+      <aside className="absolute bottom-0 left-0 top-0 flex h-dvh w-screen max-w-none flex-col bg-[#041C32] text-white shadow-2xl md:w-[320px] md:max-w-none">
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
           <Link href="/" className="focus-ring inline-flex rounded-md" onClick={onClose}>
             <Logo compact inverted />
@@ -1259,6 +1259,7 @@ function ProductThumb({ product }: { product: AdminProduct }) {
           alt={product.name}
           fill
           sizes="64px"
+          quality={65}
           className="object-cover"
         />
       ) : (
@@ -1621,6 +1622,7 @@ function ProductModal({
                       alt={draft.name || "პროდუქტის პრევიუ"}
                       fill
                       sizes="(max-width: 1024px) 100vw, 320px"
+                      quality={75}
                       className="object-cover"
                     />
                   ) : (

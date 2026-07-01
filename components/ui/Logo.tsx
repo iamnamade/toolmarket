@@ -19,6 +19,7 @@ export function Logo({ compact = false }: LogoProps) {
         src="/logo/toolmarket.png"
         alt="ToolMarket.ge"
         fill
+        priority={!compact}
         sizes={compact ? "150px" : "(max-width: 639px) 160px, 200px"}
         className="object-contain object-left"
       />

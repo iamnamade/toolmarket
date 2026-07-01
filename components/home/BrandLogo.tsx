@@ -8,6 +8,8 @@ export function BrandLogo({ brand }: { brand: Brand }) {
       alt={brand.name}
       width={220}
       height={90}
+      sizes="(max-width: 768px) 140px, 220px"
+      quality={70}
       className="h-auto max-h-[70px] w-auto max-w-full rounded-md object-contain"
     />
   );
