@@ -70,6 +70,14 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function getCredentialsErrorMessage(code: string | undefined) {
+  if (code === "credentials_unavailable") {
+    return "შესვლა დროებით მიუწვდომელია. production ავტორიზაციის კონფიგურაცია სრულად არ არის ჩატვირთული.";
+  }
+
+  return "ელ. ფოსტა ან პაროლი არასწორია";
+}
+
 export function AuthCard({
   initialMode = "login",
   callbackUrl = "/profile"
@@ -165,7 +173,7 @@ export function AuthCard({
       if (result?.error) {
         setNotice({
           tone: "error",
-          text: "ელ. ფოსტა ან პაროლი არასწორია"
+          text: getCredentialsErrorMessage(result.code)
         });
         return;
       }

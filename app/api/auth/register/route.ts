@@ -1,4 +1,11 @@
 import { NextResponse } from "next/server";
+import { getRegistrationReadiness } from "@/lib/auth-env";
+import {
+  getDatabaseConnectionDiagnostics,
+  logAuthEnvironmentSnapshot,
+  logAuthError,
+  logAuthEvent
+} from "@/lib/auth-diagnostics";
 import { createCredentialsUser, credentialsUserExists, normalizeAuthEmail } from "@/lib/credentials-auth";
 import { verifyRecaptchaToken } from "@/lib/recaptcha";
 
@@ -25,6 +32,7 @@ function getClientIp(request: Request) {
 }
 
 export async function POST(request: Request) {
+  logAuthEnvironmentSnapshot("auth.register");
   const body = (await request.json().catch(() => null)) as RegisterRequestBody | null;
 
   const firstName = typeof body?.firstName === "string" ? body.firstName.trim() : "";
@@ -32,6 +40,16 @@ export async function POST(request: Request) {
   const email = typeof body?.email === "string" ? normalizeAuthEmail(body.email) : "";
   const password = typeof body?.password === "string" ? body.password : "";
   const captchaToken = typeof body?.captchaToken === "string" ? body.captchaToken : "";
+  const registrationReadiness = getRegistrationReadiness();
+
+  logAuthEvent("auth.register.start", {
+    hasFirstName: firstName.length > 0,
+    hasLastName: lastName.length > 0,
+    hasEmail: email.length > 0,
+    hasPassword: password.length > 0,
+    hasCaptchaToken: captchaToken.trim().length > 0,
+    registrationConfigured: registrationReadiness.configured
+  });
 
   if (!firstName) {
     return NextResponse.json(
@@ -68,7 +86,28 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!registrationReadiness.configured) {
+    logAuthEvent("auth.register.blocked", {
+      reason: "missing-recaptcha-config",
+      missing: registrationReadiness.missing
+    });
+
+    return NextResponse.json(
+      {
+        error:
+          "რეგისტრაცია დროებით მიუწვდომელია, რადგან reCAPTCHA-ის production კონფიგურაცია არ არის სრულად ჩართული.",
+        field: "captcha"
+      },
+      { status: 500 }
+    );
+  }
+
   const recaptchaResult = await verifyRecaptchaToken(captchaToken, getClientIp(request));
+
+  logAuthEvent("auth.register.recaptcha", {
+    success: recaptchaResult.success,
+    code: recaptchaResult.success ? "ok" : recaptchaResult.code
+  });
 
   if (!recaptchaResult.success) {
     return NextResponse.json(
@@ -82,30 +121,48 @@ export async function POST(request: Request) {
     );
   }
 
-  const existingUser = await credentialsUserExists(email);
+  const dbDiagnostics = await getDatabaseConnectionDiagnostics("auth.register");
 
-  if (existingUser) {
+  if (!dbDiagnostics.connected) {
     return NextResponse.json(
-      { error: "ამ ელ. ფოსტით ანგარიში უკვე არსებობს.", field: "email" },
-      { status: 409 }
-    );
-  }
-
-  const adminEmail = process.env.AUTH_ADMIN_EMAIL?.trim().toLowerCase();
-
-  if (adminEmail && email === adminEmail) {
-    return NextResponse.json(
-      { error: "ამ ელ. ფოსტით რეგისტრაცია მიუწვდომელია.", field: "email" },
-      { status: 409 }
+      { error: "რეგისტრაციის სერვერი მონაცემთა ბაზას ვერ დაუკავშირდა. გთხოვთ სცადოთ თავიდან." },
+      { status: 500 }
     );
   }
 
   try {
+    const existingUser = await credentialsUserExists(email);
+
+    logAuthEvent("auth.register.lookup", {
+      existingUser: Boolean(existingUser)
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "ამ ელ. ფოსტით ანგარიში უკვე არსებობს.", field: "email" },
+        { status: 409 }
+      );
+    }
+
+    const adminEmail = process.env.AUTH_ADMIN_EMAIL?.trim().toLowerCase();
+
+    if (adminEmail && email === adminEmail) {
+      return NextResponse.json(
+        { error: "ამ ელ. ფოსტით რეგისტრაცია მიუწვდომელია.", field: "email" },
+        { status: 409 }
+      );
+    }
+
     const user = await createCredentialsUser({
       email,
       firstName,
       lastName,
       password
+    });
+
+    logAuthEvent("auth.register.insert", {
+      inserted: true,
+      hasUserId: Boolean(user.id)
     });
 
     return NextResponse.json(
@@ -118,7 +175,11 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    logAuthError("auth.register.exception", error, {
+      hasEmail: email.length > 0
+    });
+
     return NextResponse.json(
       { error: "რეგისტრაცია ვერ შესრულდა. გთხოვთ სცადოთ თავიდან." },
       { status: 500 }
